@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Geometry Tower Defense</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #111;
+            color: #0fe;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #000;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(15, 238, 210, 0.5);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #0fe;
+            margin-top: 0;
+            text-shadow: 0 0 10px #0fe;
+        }
+        canvas {
+            border: 1px solid #0fe;
+            background-color: #000;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 0 15px rgba(15, 238, 210, 0.3);
+        }
+        .status {
+            margin-top: 10px;
+            color: #0fe;
+            font-size: 0.9rem;
+        }
+        .log-container {
+            margin-top: 10px;
+            border: 1px solid #0fe;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            font-family: monospace;
+            background-color: #000;
+            color: #0fe;
+            transition: height 0.3s ease;
+        }
+        .log-container.hidden {
+            height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-width: 0;
+            margin-top: 0;
+            overflow: hidden;
+        }
+        .log-entry {
+            margin: 2px 0;
+            font-size: 14px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #000;
+            color: #0fe;
+            border: 1px solid #0fe;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Segoe UI', sans-serif;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #0fe;
+            color: #000;
+            box-shadow: 0 0 10px #0fe;
+        }
+        .tower-selection {
+            margin-top: 15px;
+            border: 1px solid #0fe;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .tower-selection h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #0fe;
+        }
+        .tower-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .tower-button {
+            background-color: #000;
+            color: #0fe;
+            border: 1px solid #0fe;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tower-button:hover {
+            background-color: rgba(0, 255, 238, 0.2);
+        }
+        .tower-button.active {
+            background-color: #0fe;
+            color: #000;
+            box-shadow: 0 0 10px #0fe;
+        }
+        .controls-info {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #0fe;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: left;
+        }
+        .controls-info h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #0fe;
+            text-align: center;
+        }
+        .controls-info ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #0fe;
+        }
+        .controls-info li {
+            margin: 5px 0;
+        }
+        .log-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 5px 10px;
+            border: 1px solid #0fe;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .log-toggle:hover {
+            background-color: rgba(0, 255, 238, 0.1);
+        }
+        .log-toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        .log-toggle.collapsed .log-toggle-icon {
+            transform: rotate(-90deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Neon Geometry Tower Defense</h1>
+        
+        <canvas id="canvas" width="800" height="600"></canvas>
+        
+        <div class="controls">
+            <button id="start-button">Start Game</button>
+            <button id="pause-button">Pause</button>
+        </div>
+        
+        <div class="tower-selection">
+            <h3>Select Tower</h3>
+            <div class="tower-buttons">
+                <button id="tower-line" class="tower-button active">Line Tower ($50)</button>
+                <button id="tower-triangle" class="tower-button">Triangle Tower ($100)</button>
+                <button id="tower-square" class="tower-button">Square Tower ($75)</button>
+                <button id="tower-pentagon" class="tower-button">Pentagon Tower ($150)</button>
+            </div>
+        </div>
+        
+        <div class="status">
+            <p id="status">WASM module loading...</p>
+        </div>
+        
+        <div class="controls-info">
+            <h3>Keyboard Controls</h3>
+            <ul>
+                <li>1-4: Select towers</li>
+                <li>ESC: Deselect tower</li>
+                <li>Space: Pause/Resume</li>
+            </ul>
+        </div>
+        
+        <div class="log-toggle" id="log-toggle">
+            <span>Console Output</span>
+            <span class="log-toggle-icon">▼</span>
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry">Console output will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusElement = document.getElementById('status');
+        const logContainer = document.getElementById('log-container');
+        const startButton = document.getElementById('start-button');
+        const pauseButton = document.getElementById('pause-button');
+        const towerButtons = {
+            line: document.getElementById('tower-line'),
+            triangle: document.getElementById('tower-triangle'),
+            square: document.getElementById('tower-square'),
+            pentagon: document.getElementById('tower-pentagon')
+        };
+        
+        // Audio system
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffers = {};
+        const audioFiles = [
+            { name: 'enemyHit', path: 'audio/enemy-hit.ogg' },
+            { name: 'levelComplete', path: 'audio/level-complete.ogg' },
+            { name: 'levelFail', path: 'audio/level-fail.ogg' },
+            { name: 'towerShoot', path: 'audio/tower-shoot.ogg' },
+            { name: 'enemyExplosion', path: 'audio/enemy-explosion.ogg' }
+        ];
+        
+        // Preload all audio files
+        async function preloadAudio() {
+            try {
+                const loadPromises = audioFiles.map(async (file) => {
+                    const response = await fetch(file.path);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    audioBuffers[file.name] = audioBuffer;
+                    console.log(`Loaded audio: ${file.name}`);
+                });
+                
+                await Promise.all(loadPromises);
+                console.log('All audio files loaded successfully');
+            } catch (error) {
+                console.error('Error loading audio files:', error);
+            }
+        }
+        
+        // Function to play sound from buffer
+        function playSound(soundName) {
+            if (audioBuffers[soundName]) {
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffers[soundName];
+                source.connect(audioContext.destination);
+                source.start(0);
+            }
+        }
+        
+        // WASM module reference
+        let zigModule = null;
+        
+        // Animation state
+        let animationFrameId = null;
+        let lastTimestamp = 0;
+        let isPaused = false;
+        
+        // Game state
+        let currentHoverX = -1;
+        let currentHoverY = -1;
+        let canPlaceTower = false;
+        
+        // Define imports globally so it can be accessed from all functions
+        const imports = {
+            env: {
+                consoleLog: (ptr, len) => {
+                    const buffer = new Uint8Array(zigModule.memory.buffer);
+                    const message = new TextDecoder().decode(buffer.subarray(ptr, ptr + len));
+                    console.log(message);
+                    addLogEntry(message);
+                },
+                clearCanvas: () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                },
+                drawRect: (x, y, width, height, r, g, b) => {
+                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    ctx.fillRect(x, y, width, height);
+                },
+                // New drawing functions for tower defense game
+                drawCircle: (x, y, radius, r, g, b, fill) => {
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    if (fill) {
+                        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                        ctx.fill();
+                    } else {
+                        ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                },
+                drawLine: (x1, y1, x2, y2, thickness, r, g, b) => {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+                    ctx.lineWidth = thickness;
+                    ctx.stroke();
+                },
+                drawTriangle: (x1, y1, x2, y2, x3, y3, r, g, b, fill) => {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.lineTo(x3, y3);
+                    ctx.closePath();
+                    if (fill) {
+                        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                        ctx.fill();
+                    } else {
+                        ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                },
+                drawText: (x, y, text_ptr, text_len, size, r, g, b) => {
+                    const buffer = new Uint8Array(zigModule.memory.buffer);
+                    const text = new TextDecoder().decode(buffer.subarray(text_ptr, text_ptr + text_len));
+                    ctx.font = `${size}px sans-serif`;
+                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    ctx.fillText(text, x, y);
+                },
+                // Add preview drawing function
+                drawTowerPreview: (x, y, can_place) => {
+                    if (x < 0 || y < 0) return;
+                    
+                    // Get the range of the currently selected tower
+                    let range = 0;
+                    if (zigModule && typeof zigModule.getTowerRange === 'function') {
+                        range = zigModule.getTowerRange();
+                    } else {
+                        // Default ranges if function not available
+                        const selectedTower = document.querySelector('.tower-button.active');
+                        if (selectedTower) {
+                            if (selectedTower.id === 'tower-line') range = 150;
+                            else if (selectedTower.id === 'tower-triangle') range = 100;
+                            else if (selectedTower.id === 'tower-square') range = 120;
+                            else if (selectedTower.id === 'tower-pentagon') range = 200;
+                        }
+                    }
+                    
+                    // Draw tower placement indicator
+                    ctx.beginPath();
+                    ctx.arc(x, y, 20, 0, Math.PI * 2);
+                    ctx.strokeStyle = can_place ? 'rgba(0, 255, 238, 0.5)' : 'rgba(255, 0, 0, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Draw tower range indicator if placement is valid
+                    if (can_place && range > 0) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, range, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(0, 255, 238, 0.2)';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                    
+                    if (!can_place) {
+                        // Draw X
+                        ctx.beginPath();
+                        ctx.moveTo(x - 15, y - 15);
+                        ctx.lineTo(x + 15, y + 15);
+                        ctx.moveTo(x + 15, y - 15);
+                        ctx.lineTo(x - 15, y + 15);
+                        ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                        ctx.stroke();
+                    }
+                },
+                // Audio functions
+                playEnemyHitSound: () => {
+                    playSound('enemyHit');
+                },
+                playLevelCompleteSound: () => {
+                    playSound('levelComplete');
+                },
+                playLevelFailSound: () => {
+                    playSound('levelFail');
+                },
+                playTowerShootSound: () => {
+                    playSound('towerShoot');
+                },
+                playEnemyExplosionSound: () => {
+                    playSound('enemyExplosion');
+                }
+            }
+        };
+        
+        // Animation loop function - define it before using it
+        function animate(timestamp) {
+            // If paused, don't request next frame
+            if (isPaused) {
+                animationFrameId = null;
+                return;
+            }
+            
+            // Calculate delta time in seconds
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const deltaTime = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+            
+            // Call WASM update function
+            zigModule.update(deltaTime);
+            
+            // Draw tower preview if hovering
+            if (currentHoverX >= 0 && currentHoverY >= 0) {
+                imports.env.drawTowerPreview(currentHoverX, currentHoverY, canPlaceTower);
+            }
+            
+            // Request next frame
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        
+        // Start animation loop
+        function startAnimationLoop() {
+            // Start the animation loop
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        
+        // Add log entry to the log container
+        function addLogEntry(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = message;
+            logContainer.appendChild(entry);
+            
+            // Auto-scroll to bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Limit number of entries
+            while (logContainer.children.length > 100) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+        
+        // Function to select tower type
+        function selectTower(towerType) {
+            // Update UI
+            Object.values(towerButtons).forEach(btn => btn.classList.remove('active'));
+            
+            // Set active class based on selection
+            switch(towerType) {
+                case 1: towerButtons.line.classList.add('active'); break;
+                case 2: towerButtons.triangle.classList.add('active'); break;
+                case 3: towerButtons.square.classList.add('active'); break;
+                case 4: towerButtons.pentagon.classList.add('active'); break;
+                default: break; // For ESC key (deselect)
+            }
+            
+            // Call WASM function to set selected tower type
+            if (zigModule && typeof zigModule.selectTowerType === 'function') {
+                zigModule.selectTowerType(towerType);
+            } else {
+                console.warn("selectTowerType function not available in WASM module");
+            }
+        }
+        
+        // Handle canvas click
+        function handleCanvasClick(event) {
+            if (!zigModule || isPaused) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Call WASM function to handle click
+            zigModule.handleClick(x, y);
+        }
+        
+        // Start the game
+        function startGame() {
+            if (!zigModule) return;
+            
+            // Reset game state if needed
+            if (typeof zigModule.resetGame === 'function') {
+                zigModule.resetGame();
+            }
+            
+            isPaused = false;
+            statusElement.textContent = "Game started";
+            
+            // Start animation loop if not already running
+            if (!animationFrameId) {
+                startAnimationLoop();
+            }
+        }
+        
+        // Toggle pause state
+        function togglePause() {
+            if (!zigModule) return;
+            
+            isPaused = !isPaused;
+            statusElement.textContent = isPaused ? "Game paused" : "Game resumed";
+            
+            if (!isPaused && !animationFrameId) {
+                startAnimationLoop();
+            }
+        }
+        
+        // Initialize WebAssembly module
+        async function initWasm() {
+            try {
+                statusElement.textContent = "Loading audio and WASM module...";
+                
+                // First preload all audio files
+                await preloadAudio();
+                
+                // Then load the WASM file
+                const wasmUrl = 'towerd.wasm';
+                
+                const response = await fetch(wasmUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch WASM: ${response.statusText}`);
+                }
+                
+                const wasmBytes = await response.arrayBuffer();
+                
+                // Instantiate the WebAssembly module
+                const { instance } = await WebAssembly.instantiate(wasmBytes, imports);
+                zigModule = instance.exports;
+                
+                // Initialize the WASM module with canvas dimensions
+                zigModule.init(canvas.width, canvas.height);
+                
+                // Update status
+                statusElement.textContent = "WASM module loaded successfully";
+                
+                // Add click event listener to canvas
+                canvas.addEventListener('click', handleCanvasClick);
+                
+                // Add button event listeners
+                startButton.addEventListener('click', startGame);
+                pauseButton.addEventListener('click', togglePause);
+                
+                // Add tower selection button listeners
+                towerButtons.line.addEventListener('click', () => selectTower(1)); // Line = 1
+                towerButtons.triangle.addEventListener('click', () => selectTower(2)); // Triangle = 2
+                towerButtons.square.addEventListener('click', () => selectTower(3)); // Square = 3
+                towerButtons.pentagon.addEventListener('click', () => selectTower(4)); // Pentagon = 4
+                
+                // Add keyboard event listener
+                window.addEventListener('keydown', (event) => {
+                    if (!zigModule) return;
+                    
+                    switch(event.key) {
+                        case '1': selectTower(1); break;
+                        case '2': selectTower(2); break;
+                        case '3': selectTower(3); break;
+                        case '4': selectTower(4); break;
+                        case 'Escape': selectTower(0); break; // Deselect tower
+                        case ' ': // Space bar
+                            event.preventDefault();
+                            togglePause();
+                            break;
+                    }
+                });
+                
+                // Add mouse move listener for tower placement preview
+                canvas.addEventListener('mousemove', (event) => {
+                    if (!zigModule || isPaused) return;
+                    
+                    const rect = canvas.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    
+                    // Snap to grid
+                    currentHoverX = Math.floor(x / 40) * 40 + 20;
+                    currentHoverY = Math.floor(y / 40) * 40 + 20;
+                    
+                    // Check if we can place tower here
+                    if (typeof zigModule.canPlaceTower === 'function') {
+                        canPlaceTower = zigModule.canPlaceTower(currentHoverX, currentHoverY);
+                    }
+                    
+                    // Request a frame update to show hover effect
+                    if (!animationFrameId) {
+                        requestAnimationFrame(animate);
+                    }
+                });
+                
+                // Mouse leave handler
+                canvas.addEventListener('mouseleave', () => {
+                    currentHoverX = -1;
+                    currentHoverY = -1;
+                });
+                
+            } catch (error) {
+                statusElement.textContent = `Error: ${error.message}`;
+                console.error("Initialization error:", error);
+                
+                // Add retry button
+                const retryButton = document.createElement('button');
+                retryButton.textContent = 'Retry Loading';
+                retryButton.onclick = () => {
+                    statusElement.textContent = '';
+                    retryButton.remove();
+                    initWasm();
+                };
+                statusElement.appendChild(retryButton);
+            }
+        }
+        
+        // Initialize the application
+        window.addEventListener('load', () => {
+            initWasm();
+        });
+        
+        // Add log toggle functionality
+        const logToggle = document.getElementById('log-toggle');
+        
+        logToggle.addEventListener('click', () => {
+            logContainer.classList.toggle('hidden');
+            logToggle.classList.toggle('collapsed');
+        });
+    </script>
+</body>
+</html>
