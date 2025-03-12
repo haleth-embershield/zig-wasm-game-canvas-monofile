@@ -33,7 +33,7 @@ Neon Geometry Tower Defense is a minimalist tower defense game featuring geometr
 - **Space**: Pause/Resume game
 
 ## Development
-This project is built using Zig v0.13 targeting WebAssembly. It's designed as a simple, single-file implementation to demonstrate how Zig can be used with HTML Canvas via WebAssembly.
+This project is built using Zig v0.14 targeting WebAssembly. It's designed as a simple, single-file implementation to demonstrate how Zig can be used with HTML Canvas via WebAssembly.
 
 ### Building and Running
 ```bash
