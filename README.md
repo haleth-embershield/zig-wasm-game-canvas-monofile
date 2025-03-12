@@ -1,6 +1,6 @@
 # Neon Geometry Tower Defense
 
-A VERY SIMPLE tower defense game built with Zig (v0.13) targeting WebAssembly. This project showcases ZIG + CANVAS integration in a monofile simple manner.
+A VERY SIMPLE tower defense game built with Zig (v0.14) targeting WebAssembly. This project showcases ZIG + CANVAS integration in a monofile simple manner.
 
 ## Description
 Neon Geometry Tower Defense is a minimalist tower defense game featuring geometric shapes with a neon aesthetic. Players place geometric towers (lines, triangles, squares, etc.) to defend against waves of enemy circles. The game features a sleek black background with vibrant neon colors for maximum visual impact.
